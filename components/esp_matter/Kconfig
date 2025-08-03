@@ -224,6 +224,16 @@ menu "ESP Matter"
             If enabled, we will not use zap to define the data model of the node. All of the
             endpoints are dynamic.
 
+    config ESP_MATTER_ENABLE_GENERATED_DATA_MODEL
+        bool "Enable Generated Data Model"
+        default n
+        depends on ESP_MATTER_ENABLE_DATA_MODEL
+        help
+            An experimental feature to use data model generated via automated scripts instead of legacy implementation.
+            When enabled:
+            - Generated clusters and endpoints are used.
+            - Legacy data model code is not compiled. More details can be found in the README.md file in the tools/data_model_gen directory.
+
     config ESP_MATTER_ENABLE_MATTER_SERVER
         bool "Enable Matter Server"
         default y
