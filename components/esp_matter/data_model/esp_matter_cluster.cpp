@@ -3952,6 +3952,9 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags)
         command::create_answer(cluster);
         command::create_ice_candidates(cluster);
         command::create_end(cluster);
+        // TODO: Implement init and shutdown callbacks.
+        cluster::set_init_and_shutdown_callbacks(cluster, ESPMatterWebRTCTransportRequestorClusterServerInitCallback,
+                                                 ESPMatterWebRTCTransportRequestorClusterServerShutdownCallback);
 
     }
 
