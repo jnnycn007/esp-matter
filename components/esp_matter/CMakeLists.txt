@@ -45,6 +45,9 @@ if (CONFIG_ESP_MATTER_ENABLE_MATTER_SERVER)
         list(APPEND SRC_DIRS_LIST "data_model"
                                   "data_model_provider"
                                   "data_model/private")
+        if (NOT CONFIG_ESP_MATTER_ENABLE_OPTIONAL_ATTRIBUTES)
+            list(APPEND EXCLUDE_SRCS_LIST "data_model/esp_matter_optional_attribute.cpp")
+        endif()
         list(APPEND INCLUDE_DIRS_LIST "zap_common"
                                       "data_model")
         list(APPEND PRIV_INCLUDE_DIRS_LIST "data_model/private")
