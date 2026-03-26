@@ -17,7 +17,6 @@
 #include "cJSON.h"
 #include <esp_err.h>
 #include <lib/core/TLV.h>
-#include <string>
 
 namespace esp_matter {
 
