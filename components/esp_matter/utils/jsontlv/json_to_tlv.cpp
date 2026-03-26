@@ -1,4 +1,4 @@
-// Copyright 2023 Espressif Systems (Shanghai) PTE LTD
+// Copyright 2023-2026 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cJSON.h>
+#include <element_types.h>
 #include <esp_check.h>
 #include <esp_matter_mem.h>
 #include <json_to_tlv.h>

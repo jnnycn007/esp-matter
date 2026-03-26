@@ -1,10 +1,12 @@
 set(SRC_DIRS_LIST       "."
                         "utils"
+                        "utils/jsontlv"
                         "${MATTER_SDK_PATH}/zzz_generated/app-common/app-common/zap-generated/attributes"
 )
 
 set(INCLUDE_DIRS_LIST   "."
                         "utils"
+                        "utils/jsontlv"
                         "data_model_provider"
                         "${MATTER_SDK_PATH}/zzz_generated/app-common"
                         "${MATTER_SDK_PATH}/third_party/nlfaultinjection/include"
