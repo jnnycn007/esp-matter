@@ -80,6 +80,14 @@ static bool is_unsigned_integer(const char *str, size_t len)
     return true;
 }
 
+static bool is_integral_json_number(const cJSON *val)
+{
+    if (val == nullptr || val->type != cJSON_Number) {
+        return false;
+    }
+    return static_cast<double>(val->valueint) == val->valuedouble;
+}
+
 static esp_err_t type_str_to_tlv_element_type(const char *type_str, size_t len, TLVElementType &type)
 {
     if (len == strlen(element_type::k_int8) && strncmp(type_str, element_type::k_int8, len) == 0) {
@@ -255,6 +263,9 @@ static esp_err_t encode_tlv_element(const cJSON *val, TLV::TLVWriter &writer, co
     }
     case TLVElementType::Int32: {
         ESP_RETURN_ON_FALSE(val->type == cJSON_Number, ESP_ERR_INVALID_ARG, TAG, "Invalid type");
+        ESP_RETURN_ON_FALSE(is_integral_json_number(val), ESP_ERR_INVALID_ARG, TAG, "Invalid value");
+        ESP_RETURN_ON_FALSE(val->valuedouble <= INT32_MAX && val->valuedouble >= INT32_MIN, ESP_ERR_INVALID_ARG, TAG,
+                            "Invalid range");
         int32_t int32_val = val->valueint;
         ESP_RETURN_ON_FALSE(writer.Put(tag, int32_val) == CHIP_NO_ERROR, ESP_FAIL, TAG, "Failed to encode");
         break;
@@ -267,7 +278,12 @@ static esp_err_t encode_tlv_element(const cJSON *val, TLV::TLVWriter &writer, co
             int64_val =
                 (val->valueint < INT32_MAX && val->valueint > INT32_MIN) ? val->valueint : (int64_t)val->valuedouble;
         } else {
-            int64_val = strtoll(val->valuestring, nullptr, 10);
+            ESP_RETURN_ON_FALSE(val->valuestring && val->valuestring[0] != '\0', ESP_ERR_INVALID_ARG, TAG,
+                                "Invalid int64 string");
+            char *end = nullptr;
+            int64_val = strtoll(val->valuestring, &end, 10);
+            ESP_RETURN_ON_FALSE(end != val->valuestring && end && *end == '\0', ESP_ERR_INVALID_ARG, TAG,
+                                "Invalid int64 string");
         }
         ESP_RETURN_ON_FALSE(writer.Put(tag, int64_val) == CHIP_NO_ERROR, ESP_FAIL, TAG, "Failed to encode");
         break;
@@ -290,8 +306,10 @@ static esp_err_t encode_tlv_element(const cJSON *val, TLV::TLVWriter &writer, co
     }
     case TLVElementType::UInt32: {
         ESP_RETURN_ON_FALSE(val->type == cJSON_Number, ESP_ERR_INVALID_ARG, TAG, "Invalid type");
-        ESP_RETURN_ON_FALSE(val->valueint >= 0, ESP_ERR_INVALID_ARG, TAG, "Invalid range");
-        uint32_t uint32_val = val->valueint < INT32_MAX ? val->valueint : (uint32_t)val->valuedouble;
+        ESP_RETURN_ON_FALSE(is_integral_json_number(val), ESP_ERR_INVALID_ARG, TAG, "Invalid value");
+        ESP_RETURN_ON_FALSE(val->valuedouble >= 0 && val->valuedouble <= UINT32_MAX, ESP_ERR_INVALID_ARG, TAG,
+                            "Invalid range");
+        uint32_t uint32_val = static_cast<uint32_t>(val->valuedouble);
         ESP_RETURN_ON_FALSE(writer.Put(tag, uint32_val) == CHIP_NO_ERROR, ESP_FAIL, TAG, "Failed to encode");
         break;
     }
@@ -303,7 +321,12 @@ static esp_err_t encode_tlv_element(const cJSON *val, TLV::TLVWriter &writer, co
             ESP_RETURN_ON_FALSE(val->valueint >= 0, ESP_ERR_INVALID_ARG, TAG, "Invalid range");
             uint64_val = val->valueint < INT32_MAX ? val->valueint : (uint64_t)val->valuedouble;
         } else {
-            uint64_val = strtoull(val->valuestring, nullptr, 10);
+            ESP_RETURN_ON_FALSE(val->valuestring && val->valuestring[0] != '\0', ESP_ERR_INVALID_ARG, TAG,
+                                "Invalid uint64 string");
+            char *end = nullptr;
+            uint64_val = strtoull(val->valuestring, &end, 10);
+            ESP_RETURN_ON_FALSE(end != val->valuestring && end && *end == '\0', ESP_ERR_INVALID_ARG, TAG,
+                                "Invalid uint64 string");
         }
         ESP_RETURN_ON_FALSE(writer.Put(tag, uint64_val) == CHIP_NO_ERROR, ESP_FAIL, TAG, "Failed to encode");
         break;
