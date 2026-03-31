@@ -42,3 +42,10 @@ def test_get_val_type(dut: QemuDut) -> None:
 def test_update_report(dut: QemuDut) -> None:
     run_group(dut, 'report')
     run_group(dut, 'update')
+
+
+@pytest.mark.host_test
+@pytest.mark.qemu
+@pytest.mark.esp32c3
+def test_jsontlv(dut: QemuDut) -> None:
+    run_group(dut, 'jsontlv')
