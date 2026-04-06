@@ -402,6 +402,7 @@ int create(uint8_t device_type_index)
             ESP_LOGE(TAG, "Matter create endpoint failed");
             return 1;
         }
+        esp_matter::endpoint::set_parent_endpoint(tcc_endpoint, endpoint);
 
         break;
     }
@@ -417,6 +418,7 @@ int create(uint8_t device_type_index)
             ESP_LOGE(TAG, "Matter create endpoint failed");
             return 1;
         }
+        esp_matter::endpoint::set_parent_endpoint(tcc_endpoint, endpoint);
         break;
     }
     case ESP_MATTER_AIR_PURIFIER: {
@@ -465,6 +467,7 @@ int create(uint8_t device_type_index)
             ESP_LOGE(TAG, "Matter create endpoint failed");
             return 1;
         }
+        esp_matter::endpoint::set_parent_endpoint(ps_endpoint, endpoint);
         break;
     }
     case ESP_MATTER_WATER_LEAK_DETECTOR: {
@@ -551,6 +554,7 @@ int create(uint8_t device_type_index)
             ESP_LOGE(TAG, "Matter create endpoint failed");
             return 1;
         }
+        esp_matter::endpoint::set_parent_endpoint(ps_endpoint, endpoint);
         break;
     }
     case ESP_MATTER_MICROWAVE_OVEN: {
