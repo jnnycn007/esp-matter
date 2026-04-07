@@ -1,4 +1,4 @@
-// Copyright 2022 Espressif Systems (Shanghai) PTE LTD
+// Copyright 2022-2026 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <commands/clusters/DataModelLogger.h>
 #include <controller/CommissioneeDeviceProxy.h>
+#include <cJSON.h>
 #include <esp_check.h>
 #include <esp_matter_controller_client.h>
 #include <esp_matter_controller_cluster_command.h>
 #include <esp_matter_controller_utils.h>
 #include <esp_matter_mem.h>
 #include <json_parser.h>
+#include <tlv_to_json.h>
 
 #include <app/server/Server.h>
 #include <crypto/CHIPCryptoPAL.h>
@@ -28,116 +29,10 @@
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 
-using namespace chip::app::Clusters;
 using namespace esp_matter::client;
 static const char *TAG = "cluster_command";
 
 namespace esp_matter {
-
-namespace cluster {
-
-template <typename CommandResponseObjectT>
-esp_err_t decode_command_response(const ConcreteCommandPath &command_path, TLVReader *reader)
-{
-    ESP_RETURN_ON_FALSE(reader, ESP_ERR_INVALID_ARG, TAG, "reader cannot be NULL");
-    ESP_RETURN_ON_FALSE(command_path.mClusterId == CommandResponseObjectT::GetClusterId() &&
-                        command_path.mCommandId == CommandResponseObjectT::GetCommandId(),
-                        ESP_ERR_INVALID_ARG, TAG, "Wrong command to decode");
-    DataModelLogger::LogCommand(command_path, reader);
-    return ESP_OK;
-}
-
-namespace group_key_management {
-namespace command {
-
-void decode_response(const ConcreteCommandPath &command_path, TLVReader *reader)
-{
-    if (command_path.mCommandId == GroupKeyManagement::Commands::KeySetReadResponse::Id) {
-        decode_command_response<GroupKeyManagement::Commands::KeySetRead::Type::ResponseType>(command_path, reader);
-    }
-}
-
-} // namespace command
-} // namespace group_key_management
-
-namespace groups {
-namespace command {
-
-void decode_response(const ConcreteCommandPath &command_path, TLVReader *reader)
-{
-    if (command_path.mCommandId == Groups::Commands::AddGroupResponse::Id) {
-        decode_command_response<Groups::Commands::AddGroup::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == Groups::Commands::ViewGroupResponse::Id) {
-        decode_command_response<Groups::Commands::ViewGroup::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == Groups::Commands::RemoveGroupResponse::Id) {
-        decode_command_response<Groups::Commands::RemoveGroup::Type::ResponseType>(command_path, reader);
-    }
-}
-
-} // namespace command
-} // namespace groups
-
-namespace scenes_management {
-namespace command {
-
-void decode_response(const ConcreteCommandPath &command_path, TLVReader *reader)
-{
-    if (command_path.mCommandId == ScenesManagement::Commands::AddSceneResponse::Id) {
-        decode_command_response<ScenesManagement::Commands::AddScene::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == ScenesManagement::Commands::ViewSceneResponse::Id) {
-        decode_command_response<ScenesManagement::Commands::ViewScene::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == ScenesManagement::Commands::RemoveSceneResponse::Id) {
-        decode_command_response<ScenesManagement::Commands::RemoveScene::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == ScenesManagement::Commands::RemoveAllScenesResponse::Id) {
-        decode_command_response<ScenesManagement::Commands::RemoveAllScenes::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == ScenesManagement::Commands::StoreSceneResponse::Id) {
-        decode_command_response<ScenesManagement::Commands::StoreScene::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == ScenesManagement::Commands::GetSceneMembershipResponse::Id) {
-        decode_command_response<ScenesManagement::Commands::GetSceneMembership::Type::ResponseType>(command_path,
-                                                                                                    reader);
-    }
-}
-
-} // namespace command
-} // namespace scenes_management
-
-namespace thermostat {
-namespace command {
-
-void decode_response(const ConcreteCommandPath &command_path, TLVReader *reader)
-{
-    if (command_path.mCommandId == Thermostat::Commands::GetWeeklyScheduleResponse::Id) {
-        decode_command_response<Thermostat::Commands::GetWeeklySchedule::Type::ResponseType>(command_path, reader);
-    }
-}
-
-} // namespace command
-} // namespace thermostat
-
-namespace door_lock {
-namespace command {
-
-void decode_response(const ConcreteCommandPath &command_path, TLVReader *reader)
-{
-    if (command_path.mCommandId == DoorLock::Commands::GetWeekDayScheduleResponse::Id) {
-        decode_command_response<DoorLock::Commands::GetWeekDaySchedule::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == DoorLock::Commands::GetYearDayScheduleResponse::Id) {
-        decode_command_response<DoorLock::Commands::GetYearDaySchedule::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == DoorLock::Commands::GetHolidayScheduleResponse::Id) {
-        decode_command_response<DoorLock::Commands::GetHolidaySchedule::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == DoorLock::Commands::GetUserResponse::Id) {
-        decode_command_response<DoorLock::Commands::GetUser::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == DoorLock::Commands::SetCredentialResponse::Id) {
-        decode_command_response<DoorLock::Commands::SetCredential::Type::ResponseType>(command_path, reader);
-    } else if (command_path.mCommandId == DoorLock::Commands::GetCredentialStatusResponse::Id) {
-        decode_command_response<DoorLock::Commands::GetCredentialStatus::Type::ResponseType>(command_path, reader);
-    }
-}
-
-} // namespace command
-} // namespace door_lock
-
-} // namespace cluster
 
 namespace controller {
 
@@ -169,28 +64,26 @@ void cluster_command::default_success_fcn(void *ctx, const ConcreteCommandPath &
     ESP_LOGI(TAG,
              "Some commands of specific clusters will have a response which is not NullObject, so we need to handle the "
              "response data for those commands. Here we print the response data.");
-    ESP_LOGI(TAG,
-             "If your command's response is not printed here, please register another success callback when creating "
-             "the cluster_command object to handle the response data.");
-    switch (command_path.mClusterId) {
-    case GroupKeyManagement::Id:
-        cluster::group_key_management::command::decode_response(command_path, response_data);
-        break;
-    case Groups::Id:
-        cluster::groups::command::decode_response(command_path, response_data);
-        break;
-    case ScenesManagement::Id:
-        cluster::scenes_management::command::decode_response(command_path, response_data);
-        break;
-    case Thermostat::Id:
-        cluster::thermostat::command::decode_response(command_path, response_data);
-        break;
-    case DoorLock::Id:
-        cluster::door_lock::command::decode_response(command_path, response_data);
-        break;
-    default:
-        break;
+
+    if (!response_data) {
+        ESP_LOGI(TAG, "No response payload");
+        return;
     }
+
+    cJSON *decoded_json = nullptr;
+    if (tlv_to_json(*response_data, &decoded_json) != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to convert response payload to JSON");
+        cJSON_Delete(decoded_json);
+        return;
+    }
+
+    char *formatted_response = cJSON_Print(decoded_json);
+    if (formatted_response) {
+        ESP_LOGI(TAG, "Response JSON:\n%s", formatted_response);
+    }
+
+    cJSON_free(formatted_response);
+    cJSON_Delete(decoded_json);
 }
 
 void cluster_command::default_error_fcn(void *ctx, CHIP_ERROR error)
