@@ -575,6 +575,7 @@ pytest_esp32h2_esp_matter_dut:
   tags: ["esp32h2", "esp_matter_dut"]
 
 build_unit_test_app_qemu:
+  resource_group: build_unit_test_app_qemu
   extends:
     - .build_examples_template
   artifacts:
