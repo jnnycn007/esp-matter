@@ -20,6 +20,10 @@
 #include <app/ConcreteAttributePath.h>
 #include <app/EventHeader.h>
 #include <lib/core/TLVReader.h>
+#include <lib/core/ScopedNodeId.h>
+#include <app/MessageDef/StatusIB.h>
+
+#include <functional>
 
 using chip::app::AttributePathParams;
 using chip::app::EventPathParams;
@@ -27,16 +31,11 @@ using chip::Platform::ScopedMemoryBufferWithSize;
 
 namespace esp_matter {
 namespace controller {
-using attribute_report_cb_t = void (*)(uint64_t remote_node_id, const chip::app::ConcreteDataAttributePath &path,
-                                       chip::TLV::TLVReader *data);
-using event_report_cb_t = void (*)(uint64_t remote_node_id, const chip::app::EventHeader &header,
-                                   chip::TLV::TLVReader *data);
-using subscription_established_cb_t = void (*)(uint64_t remote_node_id, uint32_t subscription_id);
-using subscription_terminated_cb_t = void (*)(uint64_t remote_node_id, uint32_t subscription_id);
-using subscribe_failure_cb_t = void (*)(void *subscribe_command);
-using read_done_cb_t = void (*)(uint64_t remote_node_id,
-                                const ScopedMemoryBufferWithSize<AttributePathParams> &attr_paths,
-                                const ScopedMemoryBufferWithSize<EventPathParams> &EventPathParams);
+using attribute_report_cb_t = std::function<void(uint64_t remote_node_id, const chip::app::ConcreteDataAttributePath &path,
+                                                 chip::TLV::TLVReader *data, const chip::app::StatusIB &status)>;
+using event_report_cb_t = std::function<void(uint64_t remote_node_id, const chip::app::EventHeader &header,
+                                             chip::TLV::TLVReader *data, const chip::app::StatusIB *status)>;
+using on_connect_failure_cb_t = std::function<void(void*, const chip::ScopedNodeId &, CHIP_ERROR)>;
 
 #if CONFIG_ESP_MATTER_ENABLE_MATTER_SERVER
 /**

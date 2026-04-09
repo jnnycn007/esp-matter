@@ -40,10 +40,17 @@ using esp_matter::client::interaction::multiple_write_encodable_type;
 /** Write command class to send a write interaction command to a server **/
 class write_command : public WriteClient::Callback {
 public:
+    using on_error_callback = std::function<void(const ConcreteDataAttributePath  &attr_path, CHIP_ERROR)>;
+    using on_success_callback = std::function<void(const ConcreteDataAttributePath  &attr_path)>;
+    using on_write_done_callback = std::function<void(WriteClient *client)>;
     /** Constructor for command with multiple paths**/
     write_command(uint64_t node_id, ScopedMemoryBufferWithSize<AttributePathParams> &&attr_paths,
                   const char *attribute_val_str,
-                  const chip::Optional<uint16_t> timed_write_timeout_ms = chip::NullOptional)
+                  const chip::Optional<uint16_t> timed_write_timeout_ms = chip::NullOptional,
+                  on_connect_failure_cb_t connect_fail_cb = nullptr,
+                  on_success_callback write_success_cb = nullptr,
+                  on_error_callback write_fail_cb = nullptr,
+                  on_write_done_callback write_done_cb = nullptr)
         : m_node_id(node_id)
         , m_attr_paths(std::move(attr_paths))
         , m_chunked_callback(this)
@@ -51,19 +58,31 @@ public:
         , m_timed_write_timeout_ms(timed_write_timeout_ms)
         , on_device_connected_cb(on_device_connected_fcn, this)
         , on_device_connection_failure_cb(on_device_connection_failure_fcn, this)
+        , m_on_connect_failure_cb(connect_fail_cb)
+        , m_on_error_cb(write_fail_cb)
+        , m_on_success_cb(write_success_cb)
+        , m_on_write_done_cb(write_done_cb)
     {
     }
 
     /** Constructor for command with an attribute path**/
     write_command(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id,
                   const char *attribute_val_str,
-                  const chip::Optional<uint16_t> timed_write_timeout_ms = chip::NullOptional)
+                  const chip::Optional<uint16_t> timed_write_timeout_ms = chip::NullOptional,
+                  on_connect_failure_cb_t connect_fail_cb = nullptr,
+                  on_success_callback write_success_cb = nullptr,
+                  on_error_callback write_fail_cb = nullptr,
+                  on_write_done_callback write_done_cb = nullptr)
         : m_node_id(node_id)
         , m_chunked_callback(this)
         , m_attr_vals(attribute_val_str)
         , m_timed_write_timeout_ms(timed_write_timeout_ms)
         , on_device_connected_cb(on_device_connected_fcn, this)
         , on_device_connection_failure_cb(on_device_connection_failure_fcn, this)
+        , m_on_connect_failure_cb(connect_fail_cb)
+        , m_on_error_cb(write_fail_cb)
+        , m_on_success_cb(write_success_cb)
+        , m_on_write_done_cb(write_done_cb)
     {
         m_attr_paths.Alloc(1);
         if (m_attr_paths.Get()) {
@@ -84,6 +103,13 @@ public:
         CHIP_ERROR error = status.ToChipError();
         if (CHIP_NO_ERROR != error) {
             ChipLogError(chipTool, "Response Failure: %s", chip::ErrorStr(error));
+            if (m_on_error_cb) {
+                m_on_error_cb(path, error);
+            }
+        } else {
+            if (m_on_success_cb) {
+                m_on_success_cb(path);
+            }
         }
     }
 
@@ -95,6 +121,9 @@ public:
     void OnDone(WriteClient *client) override
     {
         ChipLogProgress(chipTool, "Write Done");
+        if (m_on_write_done_cb) {
+            m_on_write_done_cb(client);
+        }
         chip::Platform::Delete(this);
     }
 
@@ -111,6 +140,10 @@ private:
 
     chip::Callback::Callback<chip::OnDeviceConnected> on_device_connected_cb;
     chip::Callback::Callback<chip::OnDeviceConnectionFailure> on_device_connection_failure_cb;
+    on_connect_failure_cb_t m_on_connect_failure_cb;
+    on_error_callback m_on_error_cb;
+    on_success_callback m_on_success_cb;
+    on_write_done_callback m_on_write_done_cb;
 };
 
 /** Send write attribute command

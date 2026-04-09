@@ -33,13 +33,16 @@ The controller should support the following features:
 
 Cluster Invoking commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``invoke-cmd`` command is used for sending cluster commands to the end-devices. It utilizes a ``cluster_command`` class to establish the sessions and send the command packets. The class constructor function could accept two callback inputs:
+The ``invoke-cmd`` command is used for sending cluster commands to the end-devices. It utilizes a ``cluster_command`` class to establish the sessions and send the command packets. The class constructor function could accept three callback inputs:
 
 - **Success callback**:
   This callback will be called upon the reception of the success response. It could be used to handle the response data for the command that requires a response. Now the default success callback will print the response data for GroupKeyManagement, Groups, Scenes, Thermostat, and DoorLock clusters. If you want to handle the response data in your example, you can register your success callback when creating the ``cluster_command`` object.
 
 - **Error callback**:
   This callback will be called upon the reception of the failure response or response timeout.
+
+- **Connect failure callback**:
+  This callback will be called upon the failure of CASE session establishment.
 
 ^^^^^^^^^^^^^^^^
 
@@ -78,13 +81,16 @@ Here are some examples of the ``command-data`` format.
 
 Read commands
 ~~~~~~~~~~~~~
-The ``read_command`` class is used for sending read commands to other end-devices. Its constructor function could accept two callback inputs:
+The ``read_command`` class is used for sending read commands to other end-devices. Its constructor function could accept three callback inputs:
 
 - **Attribute report callback**:
-  This callback will be called upon the reception of the attribute report for read-attribute commands.
+  This callback will be called upon the reception of the attribute or status report for read-attribute commands.
 
 - **Event report callback**:
-  This callback will be called upon the reception of the event report for read-event commands.
+  This callback will be called upon the reception of the event or status report for read-event commands.
+
+- **Connect failure callback**:
+  This callback will be called upon the failure of CASE session establishment.
 
 Read attribute commands
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -112,7 +118,21 @@ The ``read-event`` commands are used for sending the commands of reading events 
 
 Write attribute commands
 ~~~~~~~~~~~~~~~~~~~~~~~~
-The ``write-attr`` command is used for sending the commands of writing attributes on the end-device.
+The ``write-attr`` command is used for sending the commands of writing attributes on the end-device. Its constructor function could accept four callback inputs:
+
+- **Write success callback**:
+  This callback will be called upon the success of writing one attribute path.
+
+- **Write failure callback**:
+  This callback will be called upon the failure of writing one attribute path.
+
+- **Write done callback**:
+  This callback will be called when all the write interactions are finished.
+
+- **Connect failure callback**:
+  This callback will be called upon the failure of CASE session establishment.
+
+^^^^^^^^^^^^^^^^
 
 - Send the write-attribute command:
 
@@ -160,20 +180,23 @@ For attributes of type uint64_t or int64_t, if the absolute value is greater tha
 
 Subscribe commands
 ~~~~~~~~~~~~~~~~~~
-The ``subscribe_command`` class is used for sending subscribe commands to other end-devices. Its constructor function could accept four callback
+The ``subscribe_command`` class is used for sending subscribe commands to other end-devices. Its constructor function could accept five callback
 inputs:
 
 - **Attribute report callback**:
-  This callback will be invoked upon the reception of the attribute report for subscribe-attribute commands.
+  This callback will be invoked upon the reception of the attribute or status report for subscribe-attribute commands.
 
 - **Event report callback**:
-  This callback will be invoked upon the reception of the event report for subscribe-event commands.
+  This callback will be invoked upon the reception of the event or status report for subscribe-event commands.
 
 - **Subscription established callback**:
   This callback will be invoked when the subscription is established successfully.
 
 - **Subscription terminated callback**:
   This callback will be invoked when the subscription is terminated or shutdown.
+
+- **Connect failure callback**:
+  This callback will be called upon the failure of CASE session establishment.
 
 Subscribe attribute commands
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
