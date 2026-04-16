@@ -51,6 +51,9 @@ void read_command::on_device_connected_fcn(void *context, ExchangeManager &excha
 void read_command::on_device_connection_failure_fcn(void *context, const ScopedNodeId &peerId, CHIP_ERROR error)
 {
     read_command *cmd = (read_command *)context;
+    if (cmd->m_on_connect_failure_cb) {
+        cmd->m_on_connect_failure_cb(context, peerId, error);
+    }
     chip::Platform::Delete(cmd);
     return;
 }
@@ -87,20 +90,20 @@ esp_err_t read_command::send_command()
 void read_command::OnAttributeData(const chip::app::ConcreteDataAttributePath &path, chip::TLV::TLVReader *data,
                                    const chip::app::StatusIB &status)
 {
+    if (attribute_data_cb) {
+        chip::TLV::TLVReader data_cpy;
+        if (data == nullptr) {
+            attribute_data_cb(m_node_id, path, nullptr, status);
+        } else {
+            data_cpy.Init(*data);
+            attribute_data_cb(m_node_id, path, &data_cpy, status);
+        }
+    }
+
     CHIP_ERROR error = status.ToChipError();
     if (CHIP_NO_ERROR != error) {
         ESP_LOGE(TAG, "Response Failure: %s", chip::ErrorStr(error));
         return;
-    }
-
-    if (data == nullptr) {
-        ESP_LOGE(TAG, "Response Failure: No Data");
-        return;
-    }
-    if (attribute_data_cb) {
-        chip::TLV::TLVReader data_cpy;
-        data_cpy.Init(*data);
-        attribute_data_cb(m_node_id, path, &data_cpy);
     }
     error = DataModelLogger::LogAttribute(path, data);
     if (CHIP_NO_ERROR != error) {
@@ -111,6 +114,16 @@ void read_command::OnAttributeData(const chip::app::ConcreteDataAttributePath &p
 void read_command::OnEventData(const chip::app::EventHeader &event_header, chip::TLV::TLVReader *data,
                                const chip::app::StatusIB *status)
 {
+    if (event_data_cb) {
+        chip::TLV::TLVReader data_cpy;
+        if (data == nullptr) {
+            event_data_cb(m_node_id, event_header, nullptr, status);
+        } else {
+            data_cpy.Init(*data);
+            event_data_cb(m_node_id, event_header, &data_cpy, status);
+        }
+    }
+
     CHIP_ERROR error = CHIP_NO_ERROR;
     if (status != nullptr) {
         error = status->ToChipError();
@@ -119,17 +132,9 @@ void read_command::OnEventData(const chip::app::EventHeader &event_header, chip:
             return;
         }
     }
-
-    if (data == nullptr) {
-        ESP_LOGE(TAG, "Response Failure: No Data");
-        return;
+    if (data) {
+        error = DataModelLogger::LogEvent(event_header, data);
     }
-    if (event_data_cb) {
-        chip::TLV::TLVReader data_cpy;
-        data_cpy.Init(*data);
-        event_data_cb(m_node_id, event_header, &data_cpy);
-    }
-    error = DataModelLogger::LogEvent(event_header, data);
     if (CHIP_NO_ERROR != error) {
         ESP_LOGE(TAG, "Response Failure: Can not decode Data");
     }
@@ -138,6 +143,9 @@ void read_command::OnEventData(const chip::app::EventHeader &event_header, chip:
 void read_command::OnError(CHIP_ERROR error)
 {
     ESP_LOGE(TAG, "Read Error: %s", chip::ErrorStr(error));
+    if (m_on_error_cb) {
+        m_on_error_cb(m_node_id, error);
+    }
 }
 
 void read_command::OnDeallocatePaths(chip::app::ReadPrepareParams &&aReadPrepareParams)

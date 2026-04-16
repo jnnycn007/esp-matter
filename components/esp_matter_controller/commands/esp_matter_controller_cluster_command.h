@@ -18,7 +18,9 @@
 #include <esp_matter.h>
 #include <esp_matter_client.h>
 #include <esp_matter_mem.h>
+#include <esp_matter_controller_utils.h>
 #include <lib/core/Optional.h>
+#include <functional>
 
 namespace esp_matter {
 namespace controller {
@@ -40,7 +42,8 @@ public:
                     const char *command_data_field,
                     const chip::Optional<uint16_t> timed_invoke_timeout_ms = chip::NullOptional,
                     custom_command_callback::on_success_callback_t on_success = default_success_fcn,
-                    custom_command_callback::on_error_callback_t on_error = default_error_fcn)
+                    custom_command_callback::on_error_callback_t on_error = default_error_fcn,
+                    on_connect_failure_cb_t connect_fail_cb = nullptr)
         : m_destination_id(destination_id)
         , m_endpoint_id(endpoint_id)
         , m_cluster_id(cluster_id)
@@ -51,6 +54,7 @@ public:
         , on_device_connection_failure_cb(on_device_connection_failure_fcn, this)
         , on_success_cb(on_success)
         , on_error_cb(on_error)
+        , on_connect_failure_cb(connect_fail_cb)
     {
     }
 
@@ -87,6 +91,8 @@ private:
 
     custom_command_callback::on_success_callback_t on_success_cb;
     custom_command_callback::on_error_callback_t on_error_cb;
+
+    on_connect_failure_cb_t on_connect_failure_cb;
 };
 
 /** Send cluster invoke command

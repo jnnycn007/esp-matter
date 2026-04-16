@@ -19,6 +19,7 @@
 #include <esp_matter.h>
 #include <esp_matter_controller_utils.h>
 #include <esp_matter_mem.h>
+#include <functional>
 
 namespace esp_matter {
 namespace controller {
@@ -41,10 +42,17 @@ typedef enum {
 /** Read command class to send a read interaction command to a server **/
 class read_command : public ReadClient::Callback {
 public:
+    using on_error_callback = std::function<void(uint64_t node_id, CHIP_ERROR error)>;
+    using read_done_cb_t = std::function<void(uint64_t remote_node_id,
+                                              const ScopedMemoryBufferWithSize<AttributePathParams> &attr_paths,
+                                              const ScopedMemoryBufferWithSize<EventPathParams> &EventPathParams)>;
+
     /** Constructor for command with multiple paths**/
     read_command(uint64_t node_id, ScopedMemoryBufferWithSize<AttributePathParams> &&attr_paths,
                  ScopedMemoryBufferWithSize<EventPathParams> &&event_paths, attribute_report_cb_t attribute_cb,
-                 read_done_cb_t read_cb_done, event_report_cb_t event_cb)
+                 read_done_cb_t read_cb_done, event_report_cb_t event_cb,
+                 on_connect_failure_cb_t connect_fail_cb = nullptr,
+                 on_error_callback error_cb = nullptr)
         : m_node_id(node_id)
         , m_buffered_read_cb(*this)
         , m_attr_paths(std::move(attr_paths))
@@ -54,6 +62,8 @@ public:
         , attribute_data_cb(attribute_cb)
         , read_done_cb(read_cb_done)
         , event_data_cb(event_cb)
+        , m_on_connect_failure_cb(connect_fail_cb)
+        , m_on_error_cb(error_cb)
     {
     }
     /** Constructor for command with single path.
@@ -62,7 +72,9 @@ public:
      */
     read_command(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_or_event_id,
                  read_command_type_t command_type, attribute_report_cb_t attribute_cb, read_done_cb_t read_cb_done,
-                 event_report_cb_t event_cb)
+                 event_report_cb_t event_cb,
+                 on_connect_failure_cb_t connect_fail_cb = nullptr,
+                 on_error_callback error_cb = nullptr)
         : m_node_id(node_id)
         , m_buffered_read_cb(*this)
         , on_device_connected_cb(on_device_connected_fcn, this)
@@ -70,6 +82,8 @@ public:
         , attribute_data_cb(attribute_cb)
         , read_done_cb(read_cb_done)
         , event_data_cb(event_cb)
+        , m_on_connect_failure_cb(connect_fail_cb)
+        , m_on_error_cb(error_cb)
     {
         if (command_type == READ_ATTRIBUTE) {
             m_attr_paths.Alloc(1);
@@ -118,6 +132,9 @@ private:
     attribute_report_cb_t attribute_data_cb;
     read_done_cb_t read_done_cb;
     event_report_cb_t event_data_cb;
+
+    on_connect_failure_cb_t m_on_connect_failure_cb;
+    on_error_callback m_on_error_cb;
 };
 
 /** Send read command with multiple attribute paths

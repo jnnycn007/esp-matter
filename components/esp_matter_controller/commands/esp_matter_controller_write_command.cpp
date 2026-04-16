@@ -56,6 +56,9 @@ void write_command::on_device_connected_fcn(void *context, ExchangeManager &exch
 void write_command::on_device_connection_failure_fcn(void *context, const ScopedNodeId &peerId, CHIP_ERROR error)
 {
     write_command *cmd = (write_command *)context;
+    if (cmd->m_on_connect_failure_cb) {
+        cmd->m_on_connect_failure_cb(context, peerId, error);
+    }
     chip::Platform::Delete(cmd);
     return;
 }
