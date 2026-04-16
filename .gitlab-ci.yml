@@ -374,6 +374,18 @@ build_esp_matter_examples_pytest_C2:
         python tools/ci/memory_analyzer.py --chip esp32c2 --job_name "build_esp_matter_examples_pytest_C2" --ref_map_file light_mr_base.map --example "light"
       fi
 
+.build_generated_data_model_all_device_types_app_H2: &build_generated_data_model_all_device_types_app_H2
+    - *setup_ot_rcp
+    - cd ${ESP_MATTER_PATH}/examples/all_device_types_app
+    - echo "CONFIG_ESP_MATTER_ENABLE_GENERATED_DATA_MODEL=y" >> sdkconfig.defaults
+    - idf.py set-target esp32h2
+    - idf.py build
+
+.build_generated_data_model_examples_pytest_C3: &build_generated_data_model_examples_pytest_C3
+    - cd ${ESP_MATTER_PATH}
+    - echo "CONFIG_ESP_MATTER_ENABLE_GENERATED_DATA_MODEL=y" >> ${ESP_MATTER_PATH}/examples/light/sdkconfig.defaults
+    - pip install -r tools/ci/requirements-build.txt
+    - python tools/ci/build_apps.py ./examples --pytest_c3
 
 build_override_sdkconfig_examples:
   resource_group: build_override_sdkconfig_examples
@@ -385,6 +397,8 @@ build_override_sdkconfig_examples:
     - *build_esp32c6_wifi_thread_example
     - *build_controller_otbr_example
     - *build_lit_icd_example
+    - *build_generated_data_model_examples_pytest_C3
+    - *build_generated_data_model_all_device_types_app_H2
 
 build_zap_light_example:
   resource_group: build_zap_light_example
@@ -467,7 +481,6 @@ build_nopytest_remaining_examples_manual:
       --parallel-index ${CI_NODE_INDEX:-1}
   parallel: 2
 
-
 build_esp_matter_examples_pytest_C3:
   resource_group: build_esp_matter_examples_pytest_C3
   extends:
@@ -489,7 +502,6 @@ build_esp_matter_examples_pytest_C3:
     - cd ${ESP_MATTER_PATH}
     - pip install -r tools/ci/requirements-build.txt
     - python tools/ci/build_apps.py ./examples --pytest_c3
-
 
 pytest_esp32c3_esp_matter_dut:
   stage: target_test
@@ -807,5 +819,57 @@ pre_commit_check:
         echo "No files changed, skipping pre-commit"
       fi
 
+  tags:
+    - build
+
+data_model_gen_unit_tests:
+  image: $CI_DOCKER_REGISTRY/esp-env-v6.0:1
+  stage: pre_check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "push" || $CI_COMMIT_BRANCH == "main"
+  script:
+    - pip install -r ${ESP_MATTER_PATH}/tools/data_model_gen/requirements.txt
+    - cd ${ESP_MATTER_PATH}/tools/data_model_gen
+    - python tests/run_tests.py -v
+  tags:
+    - build
+
+data_model_gen_check:
+  image: ${DOCKER_IMAGE_NAME}:chip_${CHIP_SHORT_HASH}_idf_${IDF_CHECKOUT_REF}
+  stage: pre_check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "push" || $CI_COMMIT_BRANCH == "main"
+  script:
+    # Link CHIP submodule from Docker image cache
+    - rm -rf ${ESP_MATTER_PATH}/connectedhomeip/connectedhomeip
+    - ln -s ${CHIP_SUBMODULE_PATH} ${ESP_MATTER_PATH}/connectedhomeip/connectedhomeip
+    # Install data_model_gen dependencies and pre-commit
+    - pip install -r ${ESP_MATTER_PATH}/tools/data_model_gen/requirements.txt
+    - pip install pre-commit
+    # Regenerate data model from scratch
+    - cd ${ESP_MATTER_PATH}/tools/data_model_gen
+    - python data_model_gen.py --clean --no-colored-logs
+    # Format generated code with pre-commit hooks (astyle, codespell, etc.)
+    - cd ${ESP_MATTER_PATH}
+    - pre-commit install-hooks
+    - find components/esp_matter/data_model/generated -name '*.cpp' -o -name '*.h' | xargs pre-commit run --files || true
+    # Fail if generated+formatted files differ from what is committed
+    - |
+      UNTRACKED=$(git ls-files --others --exclude-standard components/esp_matter/data_model/generated/)
+      if ! git diff --quiet components/esp_matter/data_model/generated/ || [ -n "$UNTRACKED" ]; then
+        echo "ERROR: Generated data model code is out of date or not properly formatted."
+        echo ""
+        echo "To fix: run the following locally and commit the result:"
+        echo "  cd tools/data_model_gen && python data_model_gen.py --clean"
+        echo "  pre-commit run --files \$(find components/esp_matter/data_model/generated -name '*.cpp' -o -name '*.h')"
+        echo ""
+        git diff --stat components/esp_matter/data_model/generated/
+        if [ -n "$UNTRACKED" ]; then
+          echo "Untracked files:"
+          echo "$UNTRACKED"
+        fi
+        exit 1
+      fi
+      echo "Generated data model files are up to date and properly formatted."
   tags:
     - build

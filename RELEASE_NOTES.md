@@ -1,3 +1,50 @@
+# 14-April-2026
+
+## Generated Data Model (Experimental)
+
+### Added
+- Experimental support for a **generated data model** based on Matter Specification XMLs.
+- Generated sources are available under:
+  - `components/esp_matter/data_model/generated/`
+
+### Changed
+- Legacy handwritten data model implementation moved to:
+  - `components/esp_matter/data_model/legacy/`
+- Data model can now be generated using:
+
+```
+python tools/data_model_gen/data_model_gen.py
+```
+- Some APIs and namespaces have been updated with the generated data model.
+- The examples below are representative and not a complete list of changes.
+
+
+e.g.
+
+- Namespace updates include:
+```
+- namespace wifi {} → namespace wi_fi {}
+```
+
+- Color Control Cluster Attribute API's
+```
+attribute_t *create_primary_n_x(cluster_t * cluster, uint16_t value, uint8_t index);
+attribute_t *create_primary_n_y(cluster_t * cluster, uint16_t value, uint8_t index);
+attribute_t *create_primary_n_intensity(cluster_t * cluster, nullable<uint8_t> value, uint8_t index);
+```
+to
+
+```
+attribute_t *create_primary_1_x(cluster_t *cluster, uint16_t value);
+attribute_t *create_primary_1_y(cluster_t *cluster, uint16_t value);
+attribute_t *create_primary_1_intensity(cluster_t *cluster, nullable<uint8_t> value);
+```
+
+### Configuration
+- Enable via `CONFIG_ESP_MATTER_ENABLE_GENERATED_DATA_MODEL` (menuconfig → ESP Matter → Generated Data Model)
+- Existing implementations is used by default
+
+
 # 5-Mar-2026
 
 ### Controller API changes
