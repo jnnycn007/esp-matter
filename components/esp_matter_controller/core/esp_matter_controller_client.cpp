@@ -196,53 +196,69 @@ esp_err_t matter_controller_client::setup_commissioner()
 }
 
 #else
-esp_err_t matter_controller_client::setup_controller(chip::MutableByteSpan &ipk)
+esp_err_t matter_controller_client::setup_controller(chip::MutableByteSpan &ipk, chip::FabricIndex stored_fabric_index)
 {
     chip::Controller::SetupParams controller_params;
+    ScopedMemoryBufferWithSize<uint8_t> noc;
+    ScopedMemoryBufferWithSize<uint8_t> icac;
+    ScopedMemoryBufferWithSize<uint8_t> rcac;
+    ScopedMemoryBufferWithSize<uint8_t> csr;
     // Controller doesn't need to verify device attestation. Set deviceAttestationVerifier to null.
     controller_params.deviceAttestationVerifier = nullptr;
-    m_credentials_issuer = get_credentials_issuer();
-    ESP_RETURN_ON_FALSE(m_credentials_issuer, ESP_FAIL, TAG,
-                        "Please set the custom credentials_issuer before calling setup_controller");
-    ESP_RETURN_ON_ERROR(m_credentials_issuer->initialize_credentials_issuer(m_default_storage), TAG,
-                        "Failed to initialize credentials_issuer");
-    controller_params.operationalCredentialsDelegate = m_credentials_issuer->get_delegate();
+    // Controller doesn't need to use operational credentials delegate.
+    controller_params.operationalCredentialsDelegate = nullptr;
     controller_params.controllerVendorId = chip::VendorId((uint16_t)CONFIG_ESP_MATTER_CONTROLLER_VENDOR_ID);
-    // Commissioner NOC chain
-    ScopedMemoryBufferWithSize<uint8_t> noc;
-    noc.Calloc(chip::Controller::kMaxCHIPDERCertLength);
-    ESP_RETURN_ON_FALSE(noc.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for noc");
-    chip::MutableByteSpan noc_span(noc.Get(), chip::Controller::kMaxCHIPDERCertLength);
-    ScopedMemoryBufferWithSize<uint8_t> icac;
-    icac.Calloc(chip::Controller::kMaxCHIPDERCertLength);
-    ESP_RETURN_ON_FALSE(icac.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for icac");
-    chip::MutableByteSpan icac_span(icac.Get(), chip::Controller::kMaxCHIPDERCertLength);
-    ScopedMemoryBufferWithSize<uint8_t> rcac;
-    rcac.Calloc(chip::Controller::kMaxCHIPDERCertLength);
-    ESP_RETURN_ON_FALSE(rcac.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for rcac");
-    chip::MutableByteSpan rcac_span(rcac.Get(), chip::Controller::kMaxCHIPDERCertLength);
-    chip::Crypto::P256Keypair ephemeral_key;
-    ESP_RETURN_ON_ERROR(m_credentials_issuer->generate_controller_noc_chain(m_controller_node_id,
-                                                                            m_controller_fabric_id, ephemeral_key,
-                                                                            rcac_span, icac_span, noc_span),
-                        TAG, "Failed to generate NOC chain");
-    // Check whether the keypair is initialized in generate_controller_noc_chain
-    bool is_keypair_initialized = false;
-    {
-        chip::Crypto::P256ECDSASignature signature;
-        is_keypair_initialized = ephemeral_key.ECDSA_sign_msg(NULL, 0, signature) != CHIP_ERROR_UNINITIALIZED;
+    auto &factory = chip::Controller::DeviceControllerFactory::GetInstance();
+    if (stored_fabric_index != chip::kUndefinedFabricIndex) {
+        // If fabric index is valid, use the fabric index to setup controller.
+        controller_params.fabricIndex = chip::Optional(stored_fabric_index);
+    } else {
+        // If fabric index is not valid, get NOC chain from credentials issuer.
+        m_credentials_issuer = get_credentials_issuer();
+        ESP_RETURN_ON_FALSE(m_credentials_issuer, ESP_FAIL, TAG,
+                            "Please set the custom credentials_issuer before calling setup_controller");
+        ESP_RETURN_ON_ERROR(m_credentials_issuer->initialize_credentials_issuer(m_default_storage), TAG,
+                            "Failed to initialize credentials_issuer");
+        // Commissioner NOC chain
+        noc.Calloc(chip::Controller::kMaxCHIPDERCertLength);
+        ESP_RETURN_ON_FALSE(noc.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for noc");
+        chip::MutableByteSpan noc_span(noc.Get(), chip::Controller::kMaxCHIPDERCertLength);
+        icac.Calloc(chip::Controller::kMaxCHIPDERCertLength);
+        ESP_RETURN_ON_FALSE(icac.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for icac");
+        chip::MutableByteSpan icac_span(icac.Get(), chip::Controller::kMaxCHIPDERCertLength);
+        rcac.Calloc(chip::Controller::kMaxCHIPDERCertLength);
+        ESP_RETURN_ON_FALSE(rcac.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for rcac");
+        chip::MutableByteSpan rcac_span(rcac.Get(), chip::Controller::kMaxCHIPDERCertLength);
+        csr.Calloc(chip::Crypto::kMIN_CSR_Buffer_Size);
+        ESP_RETURN_ON_FALSE(csr.Get(), ESP_ERR_NO_MEM, TAG, "Failed allocate memory for csr");
+        chip::MutableByteSpan csr_span(csr.Get(), chip::Crypto::kMIN_CSR_Buffer_Size);
+
+        chip::Optional<FabricIndex> fabricIndexForCsr;
+        chip::FabricTable *fabric_table = nullptr;
+        if (factory.GetSystemState()) {
+            fabric_table = factory.GetSystemState()->Fabrics();
+        }
+        ESP_RETURN_ON_FALSE(fabric_table, ESP_FAIL, TAG,
+                            "Failed to get fabric table, Please check if the controller is initialized");
+        ESP_RETURN_ON_FALSE(fabric_table->AllocatePendingOperationalKey(fabricIndexForCsr, csr_span) == CHIP_NO_ERROR,
+                            ESP_FAIL, TAG, "Failed to allocate pending operational key");
+
+        ESP_RETURN_ON_ERROR(m_credentials_issuer->generate_controller_noc_chain_with_csr(
+                                m_controller_node_id, m_controller_fabric_id, csr_span, rcac_span, icac_span, noc_span),
+                            TAG, "Failed to generate NOC chain");
+        // Has allocated a pending operational key for fabric, so set operationalKeypair to nullptr here.
+        controller_params.operationalKeypair = nullptr;
+        controller_params.controllerRCAC = rcac_span;
+        controller_params.controllerICAC = icac_span;
+        controller_params.controllerNOC = noc_span;
     }
-    // If not initialized, use an empty keypair.
-    controller_params.operationalKeypair = is_keypair_initialized ? &ephemeral_key : nullptr;
-    controller_params.controllerRCAC = rcac_span;
-    controller_params.controllerICAC = icac_span;
-    controller_params.controllerNOC = noc_span;
+
     controller_params.defaultCommissioner = nullptr;
     controller_params.enableServerInteractions = m_operational_advertising;
     controller_params.permitMultiControllerFabrics = false;
-    auto &factory = chip::Controller::DeviceControllerFactory::GetInstance();
-    ESP_RETURN_ON_FALSE(factory.SetupController(controller_params, m_device_controller) == CHIP_NO_ERROR, ESP_FAIL, TAG,
-                        "Failed to setup controller");
+    CHIP_ERROR err = factory.SetupController(controller_params, m_device_controller);
+    ESP_RETURN_ON_FALSE(err == CHIP_NO_ERROR, ESP_FAIL, TAG, "Failed to setup controller: %" CHIP_ERROR_FORMAT,
+                        err.Format());
 
     chip::FabricIndex fabric_index = m_device_controller.GetFabricIndex();
     if (fabric_index != chip::kUndefinedFabricIndex) {

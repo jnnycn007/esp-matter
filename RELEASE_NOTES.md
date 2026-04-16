@@ -1,3 +1,9 @@
+# 16-April-2026
+
+### Controller API changes
+- `generate_controller_noc_chain` in `credentials_issuer` is intended for Matter Commissioner only, removed its use for Controller.
+- Added `generate_controller_noc_chain_with_csr` in `credentials_issuer` for Matter Controller usage.
+
 # 14-April-2026
 
 ## Generated Data Model (Experimental)

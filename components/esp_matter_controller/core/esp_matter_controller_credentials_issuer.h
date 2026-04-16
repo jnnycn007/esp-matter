@@ -45,12 +45,12 @@ public:
      * This function is used to get the OperationalCredentialsDelegate which is used to generate NOC chains for End
      * Devices
      *
-     * @return OperationalCredentialsDelegate of the Controller/Commissioner
+     * @return OperationalCredentialsDelegate of the Commissioner
      */
     virtual chip::Controller::OperationalCredentialsDelegate *get_delegate() = 0;
 
     /**
-     * This function is used to Generate NOC Chain for the Controller/Commissioner.
+     * This function is used to Generate NOC Chain for the Commissioner.
      *
      * @param[in] nodeId   The desired NodeId for the generated NOC Chain - May be optional/unused in some
      *                     implementations.
@@ -70,6 +70,24 @@ public:
     virtual esp_err_t generate_controller_noc_chain(chip::NodeId node_id, chip::FabricId fabric,
                                                     chip::Crypto::P256Keypair &keypair, chip::MutableByteSpan &rcac,
                                                     chip::MutableByteSpan &icac, chip::MutableByteSpan &noc) = 0;
+
+    /**
+     * This function is used to Generate NOC Chain for the Controller with given CSR.
+     *
+     * @param[in] csr  Pre-generated CSR in DER format.
+     * @param[in,out] rcac  Buffer to hold the Root Certificate of the generated NOC Chain.
+     * @param[in,out] icac  Buffer to hold the Intermediate Certificate of the generated NOC Chain.
+     * @param[in,out] noc   Buffer to hold the Leaf Certificate of the generated NOC Chain.
+     *
+     * @return ESP_OK on success
+     * @return error in case of failure.
+     */
+    virtual esp_err_t generate_controller_noc_chain_with_csr(chip::NodeId node_id, chip::FabricId fabric,
+                                                             chip::MutableByteSpan &csr, chip::MutableByteSpan &rcac,
+                                                             chip::MutableByteSpan &icac, chip::MutableByteSpan &noc)
+    {
+        return ESP_ERR_NOT_SUPPORTED;
+    };
 };
 
 void set_custom_credentials_issuer(credentials_issuer *issuer);
