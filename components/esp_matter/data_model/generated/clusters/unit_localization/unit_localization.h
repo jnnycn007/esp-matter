@@ -23,12 +23,8 @@ namespace unit_localization {
 
 namespace feature {
 namespace temperature_unit {
-typedef struct config {
-    uint8_t temperature_unit;
-    config() : temperature_unit(0) {}
-} config_t;
 uint32_t get_id();
-esp_err_t add(cluster_t *cluster, config_t *config);
+esp_err_t add(cluster_t *cluster);
 } /* temperature_unit */
 
 } /* feature */

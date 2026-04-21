@@ -36,6 +36,10 @@ COLORED_FORMATTER = ColoredFormatter(
 DEFAULT_OUTPUT_DIR = "out"
 DEFAULT_CHIP_VERSION = "1.5"
 
+ARTIFACTS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "artifacts"
+)
+
 SPECIFICATION_VERSIONS = ["1.1", "1.2", "1.3", "1.4", "1.4.2", "1.5", "1.6"]
 
 ALLOW_PROVISIONAL = False

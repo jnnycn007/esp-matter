@@ -26,7 +26,6 @@
 #include <unit_localization_ids.h>
 #include <binding.h>
 #include <esp_matter_data_model_priv.h>
-#include <app/ClusterCallbacks.h>
 
 using namespace chip::app::Clusters;
 using chip::app::CommandHandler;
@@ -49,12 +48,11 @@ uint32_t get_id()
     return TemperatureUnit::Id;
 }
 
-esp_err_t add(cluster_t *cluster, config_t *config)
+esp_err_t add(cluster_t *cluster)
 {
     VerifyOrReturnError(cluster, ESP_ERR_INVALID_ARG);
-    VerifyOrReturnError(config, ESP_ERR_INVALID_ARG);
     update_feature_map(cluster, get_id());
-    attribute::create_temperature_unit(cluster, config->temperature_unit);
+    attribute::create_temperature_unit(cluster, 0);
     attribute::create_supported_temperature_units(cluster, NULL, 0, 0);
 
     return ESP_OK;
@@ -68,9 +66,7 @@ attribute_t *create_temperature_unit(cluster_t *cluster, uint8_t value)
 {
     uint32_t feature_map = get_feature_map_value(cluster);
     VerifyOrReturnValue(has_feature(temperature_unit), NULL);
-    attribute_t *attribute = esp_matter::attribute::create(cluster, TemperatureUnit::Id, ATTRIBUTE_FLAG_WRITABLE | ATTRIBUTE_FLAG_NONVOLATILE, esp_matter_enum8(value));
-    esp_matter::attribute::add_bounds(attribute, esp_matter_enum8(0), esp_matter_enum8(2));
-    return attribute;
+    return esp_matter::attribute::create(cluster, TemperatureUnit::Id, ATTRIBUTE_FLAG_WRITABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY | ATTRIBUTE_FLAG_NONVOLATILE, esp_matter_enum8(value));
 }
 
 attribute_t *create_supported_temperature_units(cluster_t *cluster, uint8_t *value, uint16_t length, uint16_t count)
@@ -102,8 +98,6 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags)
         /* Attributes not managed internally */
         global::attribute::create_cluster_revision(cluster, cluster_revision);
 
-        cluster::set_init_and_shutdown_callbacks(cluster, ESPMatterUnitLocalizationClusterServerInitCallback,
-                                                 ESPMatterUnitLocalizationClusterServerShutdownCallback);
     }
 
     return cluster;

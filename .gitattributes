@@ -1,0 +1,3 @@
+# Collapse generated/auto-generated code in MR diffs (GitLab)
+components/esp_matter/data_model/generated/** gitlab-generated
+components/esp_matter/zap_common/** gitlab-generated
