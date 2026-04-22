@@ -169,6 +169,13 @@ build_image:
     - internet
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"
+      changes:
+        - tools/docker/chip_idf/**/*
+      variables:
+        DOCKERFILE_CHANGED: "1"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"
+      variables:
+        DOCKERFILE_CHANGED: "0"
   before_script:
     - mkdir -p $HOME/.docker
     - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
@@ -225,11 +232,12 @@ build_image:
     - TAG="chip_${CHIP_SHORT_HASH}_idf_${IDF_VERSION}"
     - echo $TAG
     - |
+      echo "DOCKERFILE_CHANGED=$DOCKERFILE_CHANGED"
       url="https://hub.docker.com/v2/repositories/${DOCKER_IMAGE_NAME}/tags/${TAG}"
-      if wget -q --spider "$url"; then
+      if [ "$DOCKERFILE_CHANGED" != "1" ] && wget -q --spider "$url"; then
           echo "No Differences detected. The docker image with ${TAG} is present in docker hub. Skipping docker build "
       else
-          echo "Differences detected. The docker image with ${TAG} is not present on docker hub. Triggering docker build due to submdoule update or idf version change in CI."
+          echo "Triggering docker build due to: dockerfile_changed=$DOCKERFILE_CHANGED or tag not present on docker hub"
           cd ${ESP_MATTER_PATH}/tools/docker/chip_idf
           docker build --build-arg CHIP_CHECKOUT_REF=${chip_head_commit} --build-arg IDF_CHECKOUT_REF=${IDF_VERSION} --tag ${DOCKER_IMAGE_NAME}:${TAG} .
           docker push ${DOCKER_IMAGE_NAME}:${TAG}

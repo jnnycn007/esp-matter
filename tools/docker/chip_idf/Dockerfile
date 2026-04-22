@@ -1,5 +1,5 @@
 ARG VERSION=latest
-FROM ghcr.io/project-chip/chip-build:${VERSION} as build
+FROM ghcr.io/project-chip/chip-build:${VERSION} AS build
 
 # Use IDF_CHECKOUT_REF to specify a tag, a branch or a specific commit ID.
 
@@ -12,6 +12,8 @@ RUN set -x \
     && DEBIAN_FRONTEND=noninteractive apt-get install -fy --fix-missing --no-install-recommends \
         dbus \
         bluez \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
     && : # last line
 
 RUN set -x \
@@ -36,7 +38,9 @@ RUN apt-get update && apt-get install -y python3-virtualenv
 # Setup the ESP-IDF
 WORKDIR /opt/espressif/esp-idf
 RUN set -x \
-    && ./install.sh \
+    && ./install.sh --disable-gdbgui --disable-docs \
+    && rm -rf ${IDF_TOOLS_PATH}/dist \
+    && rm -rf /root/.cache \
     && : # last line
 
 ARG CHIP_CLONE_URL=https://github.com/espressif/connectedhomeip.git
@@ -57,6 +61,7 @@ RUN set -x \
     && ./scripts/build_python.sh --enable_ble true --chip_detail_logging true -i out/py-env \
     && bash -c "source out/py-env/bin/activate" \
     && ./scripts/examples/gn_build_example.sh examples/chip-tool out/host \
+    && rm -rf /root/.cache /tmp/* \
     && : # last line
 
 COPY entrypoint.sh /opt/espressif/entrypoint.sh
