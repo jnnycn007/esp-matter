@@ -156,6 +156,16 @@ cluster::{{ cluster.func_name }}::feature::{{ mandatory_feature.func_name }}::ge
 {% endif %}
     {% endif %}
     {% endfor %}
+{% if device.esp_name == "root_node" %}
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI && defined(CONFIG_SUPPORT_WIFI_NETWORK_DIAGNOSTICS_CLUSTER)
+    cluster::wi_fi_network_diagnostics::create(endpoint, &(config->wi_fi_network_diagnostics), CLUSTER_FLAG_SERVER);
+#endif
+
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && defined(CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER)
+    cluster::thread_network_diagnostics::create(endpoint, &(config->thread_network_diagnostics), CLUSTER_FLAG_SERVER);
+#endif
+{% endif %}
 {% if device.binding_cluster_available() %}
     binding::create(endpoint, &(config->binding), CLUSTER_FLAG_SERVER);
 
