@@ -522,6 +522,9 @@ pytest_esp32c3_esp_matter_dut:
     - cd ${ESP_MATTER_PATH}
     - rm -rf connectedhomeip/connectedhomeip
     - ln -s ${CHIP_SUBMODULE_PATH} connectedhomeip/connectedhomeip
+    - cd connectedhomeip/connectedhomeip
+    - source out/py-env/bin/activate
+    - cd ${ESP_MATTER_PATH}
     - pip install -r tools/ci/requirements-pytest.txt
     - pytest examples/ --target esp32c3 -m esp_matter_dut --junitxml=XUNIT_RESULT.xml
   tags: ["esp32c3", "esp_matter_dut"]

@@ -22,7 +22,7 @@ APPS_BUILD_PER_JOB = 30
 PYTEST_C6_APPS = [
     {"target": "esp32c6", "name": "light"},
 ]
-MAINFEST_FILES = [
+MANIFEST_FILES = [
     str(PROJECT_ROOT / 'examples' / '.build-rules.yml'),
 ]
 
@@ -30,21 +30,22 @@ PYTEST_H2_APPS = [
     {"target": "esp32h2", "name": "light"},
     {"target": "esp32s3", "name": "thread_border_router"},
 ]
-MAINFEST_FILES = [
+MANIFEST_FILES = [
     str(PROJECT_ROOT / 'examples' / '.build-rules.yml'),
 ]
 
 PYTEST_C3_APPS = [
     {"target": "esp32c3", "name": "light"},
+    {"target": "esp32c3", "name": "test_optional_attributes"},
 ]
-MAINFEST_FILES = [
+MANIFEST_FILES = [
     str(PROJECT_ROOT / 'examples' / '.build-rules.yml'),
 ]
 
 PYTEST_C2_APPS = [
     {"target": "esp32c2", "name": "light"},
 ]
-MAINFEST_FILES = [
+MANIFEST_FILES = [
     str(PROJECT_ROOT / 'examples' / '.build-rules.yml'),
 ]
 
@@ -81,7 +82,7 @@ NO_PYTEST_REMAINING_APPS = [
     {"target": "esp32h2", "name": "refrigerator"},
     {"target": "esp32"  , "name": "demo/badge"},
 ]
-MAINFEST_FILES = [
+MANIFEST_FILES = [
     str(PROJECT_ROOT / 'examples' / '.build-rules.yml'),
 ]
 
@@ -132,7 +133,7 @@ def get_cmake_apps(
         build_log_filename='build_log.txt',
         size_json_filename='size.json',
         check_warnings=False,
-        manifest_files=MAINFEST_FILES,
+        manifest_files=MANIFEST_FILES,
     )
     return apps
 
@@ -211,7 +212,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--no_pytest',
         action="store_true",
-        help='Exclude pytest apps definded in PYTEST_H2_APPS and PYTEST_C6_APPS and some optional no-pytest apps',
+        help='Exclude pytest apps defined in PYTEST_H2_APPS and PYTEST_C6_APPS and some optional no-pytest apps',
     )
     parser.add_argument(
         '--no_pytest_remaining',
@@ -221,22 +222,22 @@ if __name__ == '__main__':
     parser.add_argument(
         '--pytest_c6',
         action="store_true",
-        help='Only build pytest apps, definded in PYTEST_C6_APPS',
+        help='Only build pytest apps, defined in PYTEST_C6_APPS',
     )
     parser.add_argument(
         '--pytest_h2',
         action="store_true",
-        help='Only build pytest apps, definded in PYTEST_H2_APPS',
+        help='Only build pytest apps, defined in PYTEST_H2_APPS',
     )
     parser.add_argument(
         '--pytest_c3',
         action="store_true",
-        help='Only build pytest apps, definded in PYTEST_C3_APPS',
+        help='Only build pytest apps, defined in PYTEST_C3_APPS',
     )
     parser.add_argument(
         '--pytest_c2',
         action="store_true",
-        help='Only build pytest apps, definded in PYTEST_C2_APPS',
+        help='Only build pytest apps, defined in PYTEST_C2_APPS',
     )
     parser.add_argument(
         '--collect-size-info',

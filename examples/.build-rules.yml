@@ -146,3 +146,9 @@ examples/unit_test_app:
     - if: IDF_TARGET in ["esp32c3"]
       temporary: true
       reason: the other targets are not tested yet
+
+examples/test_apps/test_optional_attributes:
+  enable:
+    - if: IDF_TARGET in ["esp32c3"]
+      temporary: true
+      reason: the other targets are not tested yet
