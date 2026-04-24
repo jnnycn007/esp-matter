@@ -19,22 +19,24 @@ Loads JSON artifacts once per run to avoid repeated file I/O.
 import json
 import os
 
-from utils.config import FileNames
+from utils.config import ARTIFACTS_DIR, FileNames
 from utils.conversion_utils import hex_to_int
 
 
 def load_cluster_parse_context(output_dir: str):
     """Load all cluster-related metadata from output_dir into a single context."""
 
-    def _load_json(filename: str):
-        path = os.path.join(output_dir, filename)
+    def _load_json(filename: str, base_dir: str = output_dir):
+        path = os.path.join(base_dir, filename)
         with open(path, "r") as f:
             return json.load(f)
 
     return ClusterParseContext(
         delegate_clusters=_load_json(FileNames.DELEGATE_CLUSTERS.value),
         plugin_init_cb_clusters=_load_json(FileNames.PLUGIN_INIT_CB_CLUSTERS.value),
-        migrated_clusters=_load_json(FileNames.MIGRATED_CLUSTERS.value),
+        migrated_clusters=_load_json(
+            FileNames.MIGRATED_CLUSTERS.value, base_dir=ARTIFACTS_DIR
+        )["migrated_cluster"],
         zap_filter_list=_load_json(FileNames.ZAP_FILTER_LIST.value),
         internally_managed_attributes=_load_json(
             FileNames.INTERNALLY_MANAGED_ATTRIBUTES.value

@@ -92,9 +92,15 @@ def find_delegate_server_files(root_dir):
     """
     delegate_server_files = set()
 
-    for dirpath, _, filenames in os.walk(root_dir):
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        if "codegen" in dirnames:
+            scan_dir = os.path.join(dirpath, "codegen")
+            filenames = os.listdir(scan_dir)
+            dirnames[:] = []
+        else:
+            scan_dir = dirpath
         for filename in filenames:
-            full_path = os.path.join(dirpath, filename)
+            full_path = os.path.join(scan_dir, filename)
 
             # Check for delegate callback in server files
             if "-delegate.h" in filename.lower():
