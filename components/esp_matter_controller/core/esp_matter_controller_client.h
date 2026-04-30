@@ -197,7 +197,7 @@ public:
     }
 #endif
 #else
-    esp_err_t setup_controller(chip::MutableByteSpan &ipk);
+    esp_err_t setup_controller(chip::MutableByteSpan &ipk, chip::FabricIndex stored_fabric_index = chip::kUndefinedFabricIndex);
     MatterDeviceController *get_controller()
     {
         return &m_device_controller;
