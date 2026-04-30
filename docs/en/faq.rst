@@ -408,6 +408,13 @@ significantly reducing the internal memory usage of your application.
 
 Please check `#1123`_ for relevant discussion on Github issue.
 
+TC-SC-4.9 (Route Information Option / RIO) failure
+--------------------------------------------------
+
+For Wi-Fi products using LwIP, Matter certification test TC-SC-4.9 checks that the device can receive Router Advertisements
+(RA) with Route Information Option (RIO) and install routes so traffic to Thread can use the correct path. Please ensure
+the Kconfig options under **Route Information Option (RIO) notes** in :doc:`certification` are enabled.
+
 Updating attribute marked as ATTRIBUTE_FLAG_MANAGED_INTERNALLY
 --------------------------------------------------------------
 

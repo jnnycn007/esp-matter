@@ -388,6 +388,32 @@ Route Information Option (RIO) notes
 
 For Wi-Fi products using LwIP, TC-SC-4.9 should be tested in order to verify that the product can receive Router Advertisement (RA) message with RIO and add route table that indicates whether the prefix can be reached by way of the router. It can be tested with a Thread Border Router (BR) which sends RA message periodically and a Thread End Device that is used to verify the Wi-Fi product can reach the Thread network via Thread BR. Some Wi-Fi Routers might have the issue that they cannot forward RA message sent by the Thread BR, so please use a Wi-Fi Router that can forward RA message when you are testing TC-SC-4.9.
 
+Ensure that the following Kconfig options are enabled in your device:
+
+::
+
+    # Enable SLAAC so that the unique local address can be added to the device's network interface.
+    CONFIG_LWIP_IPV6_AUTOCONFIG=y
+    # Ensure that IPv6 address number is enough for Matter usage, can be increased if your device requires more IPv6 addresses.
+    CONFIG_LWIP_IPV6_NUM_ADDRESSES=6
+    # Enable IP6 Route Hook so that the device can know which netif should be chosen for the messages to Thread devices.
+    CONFIG_LWIP_HOOK_IP6_ROUTE_DEFAULT=y
+    # Enable ND6 Get Gateway Hook so that the device can know the gateway address for Thread devices.
+    CONFIG_LWIP_HOOK_ND6_GET_GW_DEFAULT=y
+    # Install the hook to your netif so that the RA message with RIO can be handled
+    CONFIG_ENABLE_ROUTE_HOOK=y
+
+For ESP-IDF v5.4.3+, v5.5.2+, v6.x, the RIO support has been added to LwIP component in ESP-IDF. With the RIO support enabled, the route hook in Matter and the two LwIP hooks can be disabled.
+
+::
+
+    # Enable Route Info Option support
+    CONFIG_LWIP_IPV6_ND6_ROUTE_INFO_OPTION_SUPPORT=y
+    # The three options can be disabled if LwIP supports RIO
+    CONFIG_LWIP_HOOK_IP6_ROUTE_DEFAULT=n
+    CONFIG_LWIP_HOOK_ND6_GET_GW_DEFAULT=n
+    CONFIG_ENABLE_ROUTE_HOOK=n
+
 Here are the steps to set up the Thread BR and Thread End Device. You should prepare 2 Radio Co-Processors (RCP) to set up the `ot-br-posix <https://github.com/openthread/ot-br-posix>`__ and `ot-cli-posix <https://github.com/openthread/openthread/tree/main/examples/apps/cli>`__. The `RCP on ESP32-H2 <https://github.com/espressif/esp-idf/tree/master/examples/openthread/ot_rcp>`__ is suggested to be used here. And you can also use other platforms (such as nrf52840, efr32, etc.) as the RCPs.
 
 Setup Thread BR
