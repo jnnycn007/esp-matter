@@ -24,6 +24,14 @@
 {% for cluster in device.get_unique_mandatory_clusters() %}
 #include <{{ cluster.esp_name }}.h>
 {% endfor %}
+{% if device.esp_name == "root_node" %}
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI && defined(CONFIG_SUPPORT_WIFI_NETWORK_DIAGNOSTICS_CLUSTER)
+#include <wi_fi_network_diagnostics.h>
+#endif
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && defined(CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER)
+#include <thread_network_diagnostics.h>
+#endif
+{% endif %}
 
 #include <esp_matter_core.h>
 
@@ -68,6 +76,14 @@ typedef struct config {
     {% endfor %}
     {% endif %}
     {% endfor %}
+{% if device.esp_name == "root_node" %}
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI && defined(CONFIG_SUPPORT_WIFI_NETWORK_DIAGNOSTICS_CLUSTER)
+    cluster::wi_fi_network_diagnostics::config_t wi_fi_network_diagnostics;
+#endif
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && defined(CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER)
+    cluster::thread_network_diagnostics::config_t thread_network_diagnostics;
+#endif
+{% endif %}
     {% if init_list %}
     config() : {{ init_list | join(", ") }} {}
     {% endif %}

@@ -27,6 +27,12 @@
 #include <operational_credentials.h>
 #include <group_key_management.h>
 #include <icd_management.h>
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI && defined(CONFIG_SUPPORT_WIFI_NETWORK_DIAGNOSTICS_CLUSTER)
+#include <wi_fi_network_diagnostics.h>
+#endif
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && defined(CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER)
+#include <thread_network_diagnostics.h>
+#endif
 
 #include <esp_matter_core.h>
 
@@ -48,6 +54,12 @@ typedef struct config {
     cluster::operational_credentials::config_t operational_credentials;
     cluster::group_key_management::config_t group_key_management;
     cluster::icd_management::config_t icd_management;
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI && defined(CONFIG_SUPPORT_WIFI_NETWORK_DIAGNOSTICS_CLUSTER)
+    cluster::wi_fi_network_diagnostics::config_t wi_fi_network_diagnostics;
+#endif
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && defined(CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER)
+    cluster::thread_network_diagnostics::config_t thread_network_diagnostics;
+#endif
 } config_t;
 
 uint32_t get_device_type_id();
