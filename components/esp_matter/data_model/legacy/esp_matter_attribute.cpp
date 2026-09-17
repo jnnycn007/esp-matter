@@ -418,10 +418,9 @@ attribute_t *create_tc_acknowledgements_required(cluster_t *cluster, bool value)
 
 attribute_t *create_tc_update_deadline(cluster_t *cluster, nullable<uint32_t> value)
 {
-    // Current CHIP submodule don't have this attribute
-    //return esp_matter::attribute::create(cluster, GeneralCommissioning::Attributes::TCUpdateDeadline::Id,
-    //                                     ATTRIBUTE_FLAG_NONVOLATILE | ATTRIBUTE_FLAG_NULLABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY, esp_matter_attr_val(value));
-    return NULL;
+    return esp_matter::attribute::create(cluster, GeneralCommissioning::Attributes::TCUpdateDeadline::Id,
+                                         ATTRIBUTE_FLAG_NONVOLATILE | ATTRIBUTE_FLAG_NULLABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY,
+                                         esp_matter_attr_val(value));
 }
 
 attribute_t *create_is_commissioning_without_power(cluster_t *cluster, bool value)
@@ -990,22 +989,16 @@ attribute_t *create_active_network_faults_list(cluster_t *cluster, uint8_t *valu
 
 attribute_t *create_ext_address(cluster_t *cluster, nullable<uint64_t> value)
 {
-    // Current CHIP submodule don't have this attribute
-    // TODO: https://jira.espressif.com:8443/browse/CON-1438
-    // return esp_matter::attribute::create(cluster,
-    //                                     ThreadNetworkDiagnostics::Attributes::ExtAddress::Id,
-    //                                     ATTRIBUTE_FLAG_NULLABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY, esp_matter_attr_val(value));
-    return NULL;
+    return esp_matter::attribute::create(cluster, ThreadNetworkDiagnostics::Attributes::ExtAddress::Id,
+                                         ATTRIBUTE_FLAG_NULLABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY,
+                                         esp_matter_attr_val(value));
 }
 
 attribute_t *create_rloc16(cluster_t *cluster, nullable<uint16_t> value)
 {
-    // Current CHIP submodule don't have this attribute
-    // TODO: https://jira.espressif.com:8443/browse/CON-1438
-    // return esp_matter::attribute::create(cluster,
-    //                                     ThreadNetworkDiagnostics::Attributes::Rloc16::Id,
-    //                                     ATTRIBUTE_FLAG_NULLABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY, esp_matter_attr_val(value));
-    return NULL;
+    return esp_matter::attribute::create(cluster, ThreadNetworkDiagnostics::Attributes::Rloc16::Id,
+                                         ATTRIBUTE_FLAG_NULLABLE | ATTRIBUTE_FLAG_MANAGED_INTERNALLY,
+                                         esp_matter_attr_val(value));
 }
 
 attribute_t *create_overrun_count(cluster_t *cluster, uint64_t value)
