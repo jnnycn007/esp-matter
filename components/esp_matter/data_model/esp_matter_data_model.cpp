@@ -698,7 +698,7 @@ esp_err_t set_val_internal(attribute_t *attribute, esp_matter_attr_val_t *val, b
                                              current_attribute->cluster_id, current_attribute->attribute_id, val),
                             TAG, "Failed to execute pre update callback");
     }
-    // TODO: call pre attribute change function is the cluster has the flag
+    // TODO: call pre attribute change function if the cluster has the flag
     if (val->type == ESP_MATTER_VAL_TYPE_CHAR_STRING || val->type == ESP_MATTER_VAL_TYPE_OCTET_STRING ||
             val->type == ESP_MATTER_VAL_TYPE_LONG_CHAR_STRING || val->type == ESP_MATTER_VAL_TYPE_LONG_OCTET_STRING) {
         uint16_t null_len =

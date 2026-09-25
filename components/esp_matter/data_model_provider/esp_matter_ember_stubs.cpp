@@ -583,7 +583,7 @@ EmberAfDefaultAttributeValue get_default_attr_value_from_val(esp_matter_attr_val
 
 namespace chip {
 namespace app {
-// TODO: Remove EnabledEndpointsWithServerCluster when door-lock, power-source-configuration, and ota-requestor server
+// TODO: Remove EnabledEndpointsWithServerCluster when door-lock and power-source-configuration server
 // is decoupled from ember.
 EnabledEndpointsWithServerCluster::EnabledEndpointsWithServerCluster(ClusterId clusterId)
     : mEndpointCount(esp_matter::endpoint::get_count(esp_matter::node::get()))
@@ -623,11 +623,10 @@ void EnabledEndpointsWithServerCluster::EnsureMatchingEndpoint()
 // Override Ember functions
 
 // TODO: Remove the emberAfGetClusterServerEndpointIndex function when laundry-dryer-controls, keypad-input,
-// door-lock, level-control, target-navigator, fan-control, occupancy-sensor, valve-configuration-and-control,
-// media-playback, content-launch, audio-output, power-source, application-basic, low-power, diagnostic-logs,
-// color-control, channel, laundry-washer-controls, wake-on-lan, window-covering, content-control, dishwasher-alarm,
-// on-off, media-input, application-launcher, account-login, thermostat, electrical-energy-measurement,
-// content-app-observer, and boolean-state-configuration clusters are decoupled from ember.
+// door-lock, level-control, target-navigator, media-playback, content-launch, audio-output, power-source,
+// application-basic, low-power, color-control, channel, wake-on-lan, window-covering, content-control,
+// dishwasher-alarm, on-off, media-input, application-launcher, account-login, thermostat, and
+// content-app-observer clusters are decoupled from ember.
 uint16_t emberAfGetClusterServerEndpointIndex(chip::EndpointId endpoint, chip::ClusterId clusterId,
                                               uint16_t fixedClusterServerEndpointCount)
 {
@@ -650,7 +649,7 @@ uint16_t emberAfGetClusterServerEndpointIndex(chip::EndpointId endpoint, chip::C
     return 0xFFFF;
 }
 
-// TODO: Remove the emberAfIsKnownVolatileAttribute function when level-control, mode-select, mode-base, and on-off
+// TODO: Remove the emberAfIsKnownVolatileAttribute function when level-control, mode-select, and on-off
 // clusters are decoupled from ember.
 bool emberAfIsKnownVolatileAttribute(chip::EndpointId endpoint, chip::ClusterId clusterId,
                                      chip::AttributeId attributeId)
@@ -662,9 +661,8 @@ bool emberAfIsKnownVolatileAttribute(chip::EndpointId endpoint, chip::ClusterId 
     return !(esp_matter::attribute::get_flags(attr) & esp_matter::ATTRIBUTE_FLAG_NONVOLATILE);
 }
 
-// TODO: Remove the emberAfContainsServer function when soil-measurement, on-off, mode-base, resource-monitoring,
-// mode-select, color-control, microwave-oven-control, concentration-measurement, air-quality, operational-state,
-// thread-network-diagnostics, general-diagnostics, level-control, and service-area clusters are decoupled from ember.
+// TODO: Remove the emberAfContainsServer function when on-off, mode-select, color-control,
+// level-control, and service-area clusters are decoupled from ember.
 bool emberAfContainsServer(chip::EndpointId endpoint, chip::ClusterId clusterId)
 {
     esp_matter::cluster_t *cluster = esp_matter::cluster::get(endpoint, clusterId);
@@ -674,8 +672,8 @@ bool emberAfContainsServer(chip::EndpointId endpoint, chip::ClusterId clusterId)
     return false;
 }
 
-// TODO: Remove the emberAfContainsAttribute function when level-control, mode-select, resource-monitoring, mode-base,
-// on-off, and pump-configuration-and-control clusters are decoupled from ember
+// TODO: Remove the emberAfContainsAttribute function when level-control, mode-select, on-off, and
+// pump-configuration-and-control clusters are decoupled from ember
 bool emberAfContainsAttribute(chip::EndpointId endpoint, chip::ClusterId clusterId, chip::AttributeId attributeId)
 {
     return esp_matter::attribute::get(endpoint, clusterId, attributeId);
@@ -781,7 +779,8 @@ Status emberAfWriteAttribute(const chip::app::ConcreteAttributePath &path, const
     return status;
 }
 
-// TODO: Remove this function when scenes and thermostat clusters are decoupled from ember APIs
+// TODO: Remove this function when the thermostat and pump-configuration-and-control clusters are decoupled from
+// ember APIs (it is also used internally by emberAfWriteAttribute above).
 // Since the attribute Metadata should always be accessed in Matter context, we return a pointer of static value.
 // But it might be dangerous when the user use this API out of Matter context.
 const EmberAfAttributeMetadata *emberAfLocateAttributeMetadata(chip::EndpointId endpointId, chip::ClusterId clusterId,
